@@ -1,6 +1,6 @@
 'use client';
 import React, { useMemo, useState } from 'react';
-import { FieldValues, useForm } from 'react-hook-form';
+import { FieldValues, useForm, SubmitHandler } from 'react-hook-form';
 
 import Modal from './Modal';
 import Heading from '../Heading';
@@ -9,8 +9,15 @@ import CategoryInput from '../inputs/CategoryInput';
 
 import useRentModal from '@/hooks/useRentModal';
 import CountrySelect from '../inputs/CountrySelect';
+import dynamic from 'next/dynamic';
+import Counter from '../inputs/Counter';
+import UploadImage from '../inputs/UploadImage';
+import Input from '../inputs/Input';
+import axios from 'axios';
+import { toast } from 'react-toastify';
+import { useRouter } from 'next/navigation';
 
-enum STEP {
+enum STEPS {
   CATEGORY = 0,
   LOCATION = 1,
   INFO = 2,
@@ -20,8 +27,9 @@ enum STEP {
 }
 const RentModal = () => {
   const rentModal = useRentModal();
-
-  const [step, setStep] = useState<number>(STEP.CATEGORY);
+  const router = useRouter();
+  const [step, setStep] = useState<number>(STEPS.CATEGORY);
+  const [isLoading, setIsLoading] = useState<boolean>(false);
 
   const {
     register,
@@ -45,6 +53,10 @@ const RentModal = () => {
   });
   const category = watch('category');
   const location = watch('location');
+  const guestCount = watch('guestCount');
+  const roomCount = watch('roomCount');
+  const bathroomCount = watch('bathroomCount');
+  const imageSrc = watch('imageSrc');
 
   const setCustomValue = (id: string, value: any) => {
     setValue(id, value, {
@@ -62,18 +74,40 @@ const RentModal = () => {
     setStep((value) => value + 1);
   };
 
+  const onSubmit: SubmitHandler<FieldValues> = (data) => {
+    if (step !== STEPS.PRICE) return onNext();
+    setIsLoading(true);
+    axios
+      .post('/api/listings', data)
+      .then(() => {
+        toast.success('Listing Created!');
+        router.refresh();
+        reset();
+        setStep(STEPS.CATEGORY);
+        rentModal.onClose();
+      })
+      .catch((error) => {
+        toast.error('Something went wrong!');
+      })
+      .finally(() => setIsLoading(false));
+  };
+
   const actionLabel = useMemo(() => {
-    if (step === STEP.PRICE) {
+    if (step === STEPS.PRICE) {
       return 'Create';
     }
     return 'Next';
   }, [step]);
 
   const secondaryActionLabel = useMemo(() => {
-    if (step === STEP.CATEGORY) return undefined;
+    if (step === STEPS.CATEGORY) return undefined;
     return 'Back';
   }, [step]);
-
+  const Map = useMemo(
+    () => dynamic(() => import('../Map'), { ssr: false }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [location]
+  );
   let bodyContent = (
     <div className="tw-flex tw-flex-col tw-gap-8">
       <Heading
@@ -96,7 +130,7 @@ const RentModal = () => {
       </div>
     </div>
   );
-  if (step === STEP.LOCATION) {
+  if (step === STEPS.LOCATION) {
     bodyContent = (
       <div className="tw-flex tw-flex-col tw-gap-8">
         <Heading
@@ -107,19 +141,110 @@ const RentModal = () => {
           value={location}
           onChange={(value) => setCustomValue('location', value)}
         />
+        <Map center={location?.latlng} />
       </div>
     );
   }
-
+  if (step === STEPS.INFO) {
+    bodyContent = (
+      <div className="tw-flex tw-flex-col tw-gap-8">
+        <Heading
+          title="Share some basics about your place"
+          subtitle="What amenities do you have?"
+        />
+        <Counter
+          onChange={(value) => setCustomValue('guestCount', value)}
+          value={guestCount}
+          title="Guests"
+          subtitle="How many guests do you allow?"
+        />
+        <hr />
+        <Counter
+          onChange={(value) => setCustomValue('roomCount', value)}
+          value={roomCount}
+          title="Rooms"
+          subtitle="How many rooms do you have?"
+        />
+        <hr />
+        <Counter
+          onChange={(value) => setCustomValue('bathroomCount', value)}
+          value={bathroomCount}
+          title="Bathrooms"
+          subtitle="How many bathrooms do you have?"
+        />
+      </div>
+    );
+  }
+  if (step === STEPS.IMAGES) {
+    bodyContent = (
+      <div className="tw-flex tw-flex-col tw-gap-8">
+        <Heading
+          title="Add a photos of your place"
+          subtitle="Show guests what your place looks like!"
+        />
+        <UploadImage
+          onChange={(value) => setCustomValue('imageSrc', value)}
+          imgSrc={imageSrc}
+        />
+      </div>
+    );
+  }
+  if (step === STEPS.DESCRIPTION) {
+    bodyContent = (
+      <div className="tw-flex tw-flex-col tw-gap-8">
+        <Heading
+          title="How would you describe your place?"
+          subtitle="Short and sweet works best!"
+        />
+        <Input
+          id="title"
+          label="Title"
+          disabled={isLoading}
+          register={register}
+          errors={errors}
+          required
+        />
+        <hr />
+        <Input
+          id="description"
+          label="Description"
+          disabled={isLoading}
+          register={register}
+          errors={errors}
+          required
+        />
+      </div>
+    );
+  }
+  if (step === STEPS.PRICE) {
+    bodyContent = (
+      <div className="tw-flex tw-flex-col tw-gap-8">
+        <Heading
+          title="Now, set your price"
+          subtitle="How much do you charge per night?"
+        />
+        <Input
+          id="price"
+          label="Price"
+          formatPrice
+          type="number"
+          disabled={isLoading}
+          register={register}
+          errors={errors}
+          required
+        />
+      </div>
+    );
+  }
   return (
     <Modal
       isOpen={rentModal.isOpen}
       title="Airbnb your home!"
       onClose={rentModal.onClose}
-      onSubmit={onNext}
+      onSubmit={handleSubmit(onSubmit)}
       actionLabel={actionLabel}
       secondaryActionLabel={secondaryActionLabel}
-      secondaryAction={step === STEP.CATEGORY ? undefined : onBack}
+      secondaryAction={step === STEPS.CATEGORY ? undefined : onBack}
       body={bodyContent}
     />
   );

@@ -76,12 +76,12 @@ const RegisterModal = () => {
       <div className="tw-relative tw-mt-4 after:tw-absolute after:tw-left-0 after:tw-right-0 after:tw-top-1/2 after:tw-h-[1px] after:tw-w-full after:tw-bg-neutral-300 after:tw-z-[1] tw-flex tw-justify-center">
         <span className="tw-px-2 tw-bg-white tw-z-10 tw-inline-block">or</span>
       </div>
-      {/* <Button
+      <Button
         outline
         label="Continue with Facebook"
-        onClick={() => {}}
+        onClick={() => signIn('facebook')}
         icon={AiFillFacebook}
-      /> */}
+      />
       <Button
         outline
         label="Continue with Google"

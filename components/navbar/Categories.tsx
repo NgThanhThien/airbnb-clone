@@ -101,6 +101,7 @@ const Categories = () => {
   const category = params?.get('category');
   const pathName = usePathname();
   const isMainPage = pathName === '/';
+  if (!isMainPage) return null;
   return (
     <>
       <Container>

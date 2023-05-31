@@ -10,21 +10,22 @@ import useRentModal from '@/hooks/useRentModal';
 
 import { signOut } from 'next-auth/react';
 import { SafeUser } from '@/app/types';
+import { useRouter } from 'next/navigation';
 
 interface UserMenuProps {
   currentUser: SafeUser | null;
 }
 const UserMenu: React.FC<UserMenuProps> = ({ currentUser }) => {
-  const [isOpen, SetIsOpen] = useState<boolean>(false);
+  const router = useRouter();
+  const [isOpen, setIsOpen] = useState<boolean>(false);
   const registerModal = useRegisterModal();
   const loginModal = useLoginModal();
   const rentModal = useRentModal();
   const toggleOpen = useCallback(() => {
-    SetIsOpen((value) => !value);
+    setIsOpen((value) => !value);
   }, []);
   const onRent = useCallback(() => {
     if (!currentUser) return loginModal.onOpen();
-    console.log('xxxx');
     rentModal.onOpen();
   }, [currentUser, loginModal, rentModal]);
 
@@ -55,10 +56,34 @@ const UserMenu: React.FC<UserMenuProps> = ({ currentUser }) => {
           <div className="tw-py-2">
             {currentUser ? (
               <>
-                <MenuItem label="My trips" onClick={() => {}} />
-                <MenuItem label="My favorites" onClick={() => {}} />
-                <MenuItem label="My reservations" onClick={() => {}} />
-                <MenuItem label="My properties" onClick={() => {}} />
+                <MenuItem
+                  label="My trips"
+                  onClick={() => {
+                    setIsOpen(false);
+                    router.push('/trips');
+                  }}
+                />
+                <MenuItem
+                  label="My favorites"
+                  onClick={() => {
+                    setIsOpen(false);
+                    router.push('/favorites');
+                  }}
+                />
+                <MenuItem
+                  label="My reservations"
+                  onClick={() => {
+                    setIsOpen(false);
+                    router.push('/reservations');
+                  }}
+                />
+                <MenuItem
+                  label="My properties"
+                  onClick={() => {
+                    setIsOpen(false);
+                    router.push('/properties');
+                  }}
+                />
                 <MenuItem label="My profile" onClick={() => {}} />
               </>
             ) : (
